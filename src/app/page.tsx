@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { NewPatientModal } from '@/components/NewPatientModal';
 import { PatientDetailTabs } from '@/components/PatientDetailTabs';
-import { Search, User, Phone, Calendar, Building2, Activity, BarChart3, Trash2, Loader2 } from 'lucide-react';
+import { Search, User, Phone, Calendar, Building2, Activity, BarChart3, Trash2, Loader2, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { format, differenceInYears } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -31,6 +31,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [deletingPatientId, setDeletingPatientId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const fetchPatients = useCallback(async () => {
     setLoading(true);
@@ -101,10 +102,34 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)]">
+    <div className="flex h-[calc(100vh-3.5rem)] relative overflow-hidden">
+
+      {/* ─── MOBILE HAMBURGER BUTTON ─── */}
+      <button
+        onClick={() => setSidebarOpen(true)}
+        className="md:hidden fixed bottom-6 left-4 z-40 w-12 h-12 rounded-full bg-zinc-900 text-white shadow-2xl flex items-center justify-center border border-zinc-700"
+        aria-label="Hasta listesini aç"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+
+      {/* ─── MOBILE BACKDROP ─── */}
+      {sidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       {/* ─── LEFT SIDEBAR ─── */}
-      <div className="w-72 shrink-0 bg-zinc-900 text-white flex flex-col h-full border-r border-zinc-800">
+      <div className={`
+        fixed md:relative top-0 left-0 h-full z-50
+        w-72 shrink-0 bg-zinc-900 text-white flex flex-col border-r border-zinc-800
+        transition-transform duration-300 ease-in-out
+        ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }
+      `}>
 
         {/* Header */}
         <div className="px-4 pt-5 pb-3 border-b border-zinc-800 space-y-3">
@@ -136,7 +161,7 @@ export default function Home() {
               return (
                 <button
                   key={patient.id}
-                  onClick={() => handleSelect(patient)}
+                  onClick={() => { handleSelect(patient); setSidebarOpen(false); }}
                   className={`w-full text-left px-4 py-3.5 border-b border-zinc-800/60 hover:bg-zinc-800/70 transition-colors group ${
                     isSelected ? 'bg-zinc-800 border-l-[3px] border-l-blue-500' : 'border-l-[3px] border-l-transparent'
                   }`}
@@ -192,7 +217,7 @@ export default function Home() {
       </div>
 
       {/* ─── RIGHT DETAIL PANEL ─── */}
-      <div className="flex-1 overflow-y-auto bg-background">
+      <div className="flex-1 overflow-y-auto bg-background w-full">
         {!selected ? (
           <div className="h-full flex items-center justify-center text-muted-foreground">
             <div className="text-center space-y-3">
