@@ -1,36 +1,30 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Artdent Klinik Yönetimi
 
-## Getting Started
+Bu proje, bir diş kliniği için modern, yapay zeka destekli bir hasta yönetim sistemidir. Next.js 14 (App Router) ile geliştirilmiş olup, Supabase altyapısı ve sesli komut sistemi içerir. Özel olarak Vercel üzerinde doğrudan çalıştırılmaya tamamen uyumludur.
 
-First, run the development server:
+## Teknolojiler
+- **Framework:** Next.js 14, React
+- **Veritabanı:** Supabase (PostgreSQL)
+- **Stil & Tasarım:** Tailwind CSS, Lucide React (İkonlar), Sonner (Bildirimler)
+- **Yapay Zeka (Sesli Komut):** Web Speech API, OpenAI (`gpt-4o-mini`)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Özellikler
+- **Hasta ve Tedavi Yönetimi:** Hasta kayıtları, diş tedavisi kayıtları ve kalan ödemelerin takibi.
+- **Sesli Komut Asistanı:** Ekranın sağ alt köşesindeki mikrofon ikonuna basılı tutularak sesle komut verilebilir. Örneğin: *"Ahmet Yılmaz adında yeni hasta ekle. Telefon numarası 0555 555 5555. Bugün için yirmilik diş çekimi tedavisi eklensin, anlaşılan tutar 3000 TL."*
+- **Sıfır Yapılandırma Gerekli Mobil Uyumlu Tasarım:** Responsive, tamamen modern cam efekti (glassmorphism) ve minimalist temiz bir arayüz barındırır. Vercel ortamında `npm run build` sorunu olmaksızın çalışır.
+
+## Kurulum ve Dağıtım (Vercel)
+
+1. Projeyi Github'a / Vercel'e yükleyin.
+2. Vercel paneline gidin ortam değişkenlerini (`Environment Variables`) ekleyin:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+OPENAI_API_KEY=your-openai-api-key
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Supabase üzerinde gerekli tabloları açmak için `supabase/migrations/initial_schema.sql` dosyasındaki SQL sorgularını Supabase SQL Editor'de çalıştırın.
+4. Supabase Storage menüsüne gidip *isteğe bağlı olarak* "audio-notes" isimli Public bir bucket oluşturarak ses dosyalarını da barındırabilirsiniz.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Uygulamanız kullanıma hazırdır.
