@@ -126,6 +126,33 @@ Bilinmeyen alanlar null olsun.`,
 
     let message = 'İşlem tamamlandı.';
 
+    // Hasta arama yardımcı - Türkçe karakter uyumlu çoklu strateji
+    const findPatient = async (nameQuery: string) => {
+      // 1. Önce direkt ilike dene
+      const { data: d1 } = await supabase
+        .from('patients').select('id, full_name')
+        .ilike('full_name', `%${nameQuery}%`).limit(1);
+      if (d1 && d1.length > 0) return d1[0];
+
+      // 2. Türkçe büyük harf dönüşümü ile dene
+      const upperQuery = nameQuery.toLocaleUpperCase('tr-TR');
+      const { data: d2 } = await supabase
+        .from('patients').select('id, full_name')
+        .ilike('full_name', `%${upperQuery}%`).limit(1);
+      if (d2 && d2.length > 0) return d2[0];
+
+      // 3. Kelimeleri ayrı ayrı ara (en az bir kelime eşleşsin)
+      const words = nameQuery.split(' ').filter(w => w.length > 2);
+      for (const word of words) {
+        const upperWord = word.toLocaleUpperCase('tr-TR');
+        const { data: d3 } = await supabase
+          .from('patients').select('id, full_name')
+          .or(`full_name.ilike.%${word}%,full_name.ilike.%${upperWord}%`).limit(1);
+        if (d3 && d3.length > 0) return d3[0];
+      }
+      return null;
+    };
+
     // Tedavi kayıt yardımcı fonksiyonu
     const insertTreatments = async (patientId: string): Promise<string[]> => {
       const savedLabels: string[] = [];
@@ -181,16 +208,8 @@ Bilinmeyen alanlar null olsun.`,
         const nameQuery = (search_query && search_query !== 'null') ? search_query : patient?.full_name;
         if (!nameQuery || nameQuery === 'null') throw new Error('Hangi hastaya tedavi ekleneceği anlaşılamadı.');
 
-        const { data: foundPatients, error: searchErr } = await supabase
-          .from('patients')
-          .select('id, full_name')
-          .ilike('full_name', `%${nameQuery}%`)
-          .limit(1);
-
-        if (searchErr || !foundPatients || foundPatients.length === 0)
-          throw new Error(`"${nameQuery}" isimli hasta bulunamadı.`);
-
-        const pt = foundPatients[0];
+        const pt = await findPatient(nameQuery);
+        if (!pt) throw new Error(`"${nameQuery}" isimli hasta bulunamadı. Lütfen tam ismi söyleyin.`);
 
         if (validTreatments.length === 0)
           throw new Error('Tedavi detayları anlaşılamadı.');
@@ -204,24 +223,18 @@ Bilinmeyen alanlar null olsun.`,
         const noteNameQuery = (search_query && search_query !== 'null') ? search_query : patient?.full_name;
         if (!noteNameQuery || noteNameQuery === 'null') throw new Error('Hangi hastaya not ekleneceği anlaşılamadı.');
 
-        const { data: fPatients, error: nSearchErr } = await supabase
-          .from('patients')
-          .select('id, full_name')
-          .ilike('full_name', `%${noteNameQuery}%`)
-          .limit(1);
-
-        if (nSearchErr || !fPatients || fPatients.length === 0)
-          throw new Error(`"${noteNameQuery}" isimli hasta bulunamadı.`);
+        const notePatient = await findPatient(noteNameQuery);
+        if (!notePatient) throw new Error(`"${noteNameQuery}" isimli hasta bulunamadı.`);
 
         if (!note?.note_text || note.note_text === 'null') throw new Error('Not içeriği anlaşılamadı.');
 
         const { error: noteErr } = await supabase.from('notes').insert({
-          patient_id: fPatients[0].id,
+          patient_id: notePatient.id,
           note_text: note.note_text,
           note_type: 'text',
         });
         if (noteErr) throw noteErr;
-        message = `${fPatients[0].full_name} için not kaydedildi.`;
+        message = `${notePatient.full_name} için not kaydedildi.`;
         break;
       }
 
