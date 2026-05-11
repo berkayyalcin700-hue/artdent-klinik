@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 const inputStyle: React.CSSProperties = {
   color: '#111827',
   backgroundColor: '#ffffff',
+  WebkitTextFillColor: '#111827',
+  opacity: 1,
 };
 
 export function NewPatientModal({ onSuccess }: { onSuccess?: () => void }) {
