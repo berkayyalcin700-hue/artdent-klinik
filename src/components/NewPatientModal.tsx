@@ -134,7 +134,7 @@ export function NewPatientModal({ onSuccess }: { onSuccess?: () => void }) {
                         onChange={handleChange}
                         placeholder="Ahmet Yılmaz"
                         required
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full h-10 rounded-md border border-gray-300 bg-white text-gray-900 px-3 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
                       />
                     </div>
 
@@ -146,7 +146,7 @@ export function NewPatientModal({ onSuccess }: { onSuccess?: () => void }) {
                         onChange={handleChange}
                         maxLength={11}
                         placeholder="12345678901"
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full h-10 rounded-md border border-gray-300 bg-white text-gray-900 px-3 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
                       />
                     </div>
 
@@ -157,7 +157,7 @@ export function NewPatientModal({ onSuccess }: { onSuccess?: () => void }) {
                         value={form.phone}
                         onChange={handleChange}
                         placeholder="0555 555 5555"
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full h-10 rounded-md border border-gray-300 bg-white text-gray-900 px-3 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
                       />
                     </div>
 
@@ -168,7 +168,7 @@ export function NewPatientModal({ onSuccess }: { onSuccess?: () => void }) {
                         name="birth_date"
                         value={form.birth_date}
                         onChange={handleChange}
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full h-10 rounded-md border border-gray-300 bg-white text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                       />
                     </div>
 
@@ -179,7 +179,7 @@ export function NewPatientModal({ onSuccess }: { onSuccess?: () => void }) {
                         value={form.institution}
                         onChange={handleChange}
                         placeholder="SGK, Özel Sigorta..."
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full h-10 rounded-md border border-gray-300 bg-white text-gray-900 px-3 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
                       />
                     </div>
                   </div>
@@ -197,7 +197,7 @@ export function NewPatientModal({ onSuccess }: { onSuccess?: () => void }) {
                         value={form.treatment_name}
                         onChange={handleChange}
                         placeholder="Kanal Tedavisi, Dolgu, Çekim..."
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full h-10 rounded-md border border-gray-300 bg-white text-gray-900 px-3 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
                       />
                     </div>
 
@@ -208,7 +208,7 @@ export function NewPatientModal({ onSuccess }: { onSuccess?: () => void }) {
                         value={form.tooth_number}
                         onChange={handleChange}
                         placeholder="16, 21..."
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full h-10 rounded-md border border-gray-300 bg-white text-gray-900 px-3 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
                       />
                     </div>
 
@@ -218,7 +218,7 @@ export function NewPatientModal({ onSuccess }: { onSuccess?: () => void }) {
                         name="payment_method"
                         value={form.payment_method}
                         onChange={handleChange}
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full h-10 rounded-md border border-gray-300 bg-white text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                       >
                         <option value="">Seçiniz</option>
                         <option value="Nakit">Nakit</option>
@@ -238,7 +238,7 @@ export function NewPatientModal({ onSuccess }: { onSuccess?: () => void }) {
                         value={form.total_price}
                         onChange={handleChange}
                         placeholder="0"
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full h-10 rounded-md border border-gray-300 bg-white text-gray-900 px-3 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
                       />
                     </div>
 
@@ -251,7 +251,7 @@ export function NewPatientModal({ onSuccess }: { onSuccess?: () => void }) {
                         value={form.agreed_price}
                         onChange={handleChange}
                         placeholder="0"
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full h-10 rounded-md border border-gray-300 bg-white text-gray-900 px-3 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
                       />
                     </div>
 
@@ -264,7 +264,7 @@ export function NewPatientModal({ onSuccess }: { onSuccess?: () => void }) {
                         value={form.paid_amount}
                         onChange={handleChange}
                         placeholder="0"
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full h-10 rounded-md border border-gray-300 bg-white text-gray-900 px-3 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
                       />
                     </div>
 
