@@ -22,6 +22,45 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
   const [savingNote, setSavingNote] = useState(false);
   const [deletingTreatmentId, setDeletingTreatmentId] = useState<string | null>(null);
 
+  // ── New Treatment Form ─────────────────────────────────────
+  const [showTreatmentForm, setShowTreatmentForm] = useState(false);
+  const [savingTreatment, setSavingTreatment] = useState(false);
+  const [treatmentForm, setTreatmentForm] = useState({
+    treatment_name: '',
+    tooth_number: '',
+    payment_method: '',
+    total_price: '',
+    agreed_price: '',
+    paid_amount: '',
+  });
+  const handleTreatmentFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setTreatmentForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+  const handleSaveTreatment = async () => {
+    if (!treatmentForm.treatment_name.trim()) { toast.error('Tedavi adı zorunludur.'); return; }
+    setSavingTreatment(true);
+    try {
+      const { data, error } = await supabase.from('treatments').insert({
+        patient_id: patient.id,
+        treatment_name: treatmentForm.treatment_name.trim(),
+        tooth_number: treatmentForm.tooth_number.trim() || null,
+        payment_method: treatmentForm.payment_method || null,
+        total_price: parseFloat(treatmentForm.total_price) || 0,
+        agreed_price: parseFloat(treatmentForm.agreed_price) || parseFloat(treatmentForm.total_price) || 0,
+        paid_amount: parseFloat(treatmentForm.paid_amount) || 0,
+      }).select().single();
+      if (error) throw error;
+      setTreatments(prev => [data, ...prev]);
+      setTreatmentForm({ treatment_name: '', tooth_number: '', payment_method: '', total_price: '', agreed_price: '', paid_amount: '' });
+      setShowTreatmentForm(false);
+      toast.success('Tedavi eklendi.');
+    } catch (err: any) {
+      toast.error(err.message || 'Tedavi kaydedilemedi.');
+    } finally {
+      setSavingTreatment(false);
+    }
+  };
+
   // Payment addition state — keyed by treatment id
   const [paymentInputs, setPaymentInputs] = useState<Record<string, string>>({});
   const [payingId, setPayingId] = useState<string | null>(null);
@@ -150,6 +189,84 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
         {/* ── TREATMENTS TAB ── */}
         {activeTab === 'treatments' && (
           <div className="p-0">
+            {/* Add Treatment Button / Form */}
+            <div className="px-4 py-3 border-b bg-muted/20">
+              {!showTreatmentForm ? (
+                <button
+                  onClick={() => setShowTreatmentForm(true)}
+                  className="flex items-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
+                >
+                  <Plus className="w-4 h-4" /> Tedavi Ekle
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold">Yeni Tedavi</span>
+                    <button onClick={() => setShowTreatmentForm(false)} className="p-1 rounded hover:bg-muted"><X className="w-4 h-4" /></button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Yapılan İşlem *</label>
+                      <input name="treatment_name" value={treatmentForm.treatment_name} onChange={handleTreatmentFormChange}
+                        placeholder="Dolgu, Kanal Tedavisi, Diş Çekimi..."
+                        style={{ color: '#111827', backgroundColor: '#ffffff' }}
+                        className="w-full h-9 rounded-md border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Diş Numarası</label>
+                      <input name="tooth_number" value={treatmentForm.tooth_number} onChange={handleTreatmentFormChange}
+                        placeholder="16, 21..."
+                        style={{ color: '#111827', backgroundColor: '#ffffff' }}
+                        className="w-full h-9 rounded-md border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Ödeme Yöntemi</label>
+                      <select name="payment_method" value={treatmentForm.payment_method} onChange={handleTreatmentFormChange}
+                        style={{ color: '#111827', backgroundColor: '#ffffff' }}
+                        className="w-full h-9 rounded-md border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+                        <option value="">Seçiniz</option>
+                        <option value="Nakit">Nakit</option>
+                        <option value="Kredi Kartı">Kredi Kartı</option>
+                        <option value="Havale">Havale / EFT</option>
+                        <option value="SGK">SGK</option>
+                        <option value="Sigorta">Özel Sigorta</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Normal Ücret (₺)</label>
+                      <input name="total_price" value={treatmentForm.total_price} onChange={handleTreatmentFormChange}
+                        placeholder="0" type="text" inputMode="decimal"
+                        style={{ color: '#111827', backgroundColor: '#ffffff' }}
+                        className="w-full h-9 rounded-md border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Anlaşılan Ücret (₺)</label>
+                      <input name="agreed_price" value={treatmentForm.agreed_price} onChange={handleTreatmentFormChange}
+                        placeholder="0" type="text" inputMode="decimal"
+                        style={{ color: '#111827', backgroundColor: '#ffffff' }}
+                        className="w-full h-9 rounded-md border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Alınan Ücret (₺)</label>
+                      <input name="paid_amount" value={treatmentForm.paid_amount} onChange={handleTreatmentFormChange}
+                        placeholder="0" type="text" inputMode="decimal"
+                        style={{ color: '#111827', backgroundColor: '#ffffff' }}
+                        className="w-full h-9 rounded-md border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-1">
+                    <button onClick={() => setShowTreatmentForm(false)}
+                      className="h-9 px-4 rounded-md text-sm border hover:bg-muted transition-colors">İptal</button>
+                    <button onClick={handleSaveTreatment} disabled={savingTreatment}
+                      className="h-9 px-4 rounded-md text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60 flex items-center gap-2">
+                      {savingTreatment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                      Kaydet
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {treatments.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">Kayıtlı tedavi bulunamadı.</div>
             ) : (
