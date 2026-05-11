@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Loader2, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -90,6 +91,8 @@ export function NewPatientModal({ onSuccess }: { onSuccess?: () => void }) {
   };
 
   const cls = "w-full h-10 rounded-md border border-gray-300 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-600/50";
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   return (
     <>
@@ -100,9 +103,9 @@ export function NewPatientModal({ onSuccess }: { onSuccess?: () => void }) {
         <Plus className="mr-2 h-4 w-4" /> Yeni Hasta
       </button>
 
-      {open && (
+      {open && mounted && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
           onClick={() => setOpen(false)}
         >
           <div
@@ -235,7 +238,8 @@ export function NewPatientModal({ onSuccess }: { onSuccess?: () => void }) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
