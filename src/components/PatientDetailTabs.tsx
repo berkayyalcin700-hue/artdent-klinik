@@ -31,6 +31,7 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
   const [editingInstallmentId, setEditingInstallmentId] = useState<string | null>(null);
   const [editingInstallmentDate, setEditingInstallmentDate] = useState<string>('');
   const [savingInstallmentEdit, setSavingInstallmentEdit] = useState(false);
+  const [deletingInstallmentId, setDeletingInstallmentId] = useState<string | null>(null);
 
   // ── New Treatment Form ─────────────────────────────────────
   const [showTreatmentForm, setShowTreatmentForm] = useState(false);
@@ -244,6 +245,33 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
       toast.error('Güncellenemedi.');
     } finally {
       setSavingInstallmentEdit(false);
+    }
+  };
+
+  const handleDeleteInstallment = async (p: any, t: any) => {
+    if (!window.confirm(`Bu taksit kaydını silmek istediğinize emin misiniz?`)) return;
+    setDeletingInstallmentId(p.id);
+    try {
+      const { error: noteError } = await supabase.from('notes').delete().eq('id', p.id);
+      if (noteError) throw noteError;
+
+      const amountToSubtract = parseFloat(p.amountStr.replace(/\./g, '').replace(',', '.')) || 0;
+      const currentPaid = Number(t.paid_amount || 0);
+      const newPaid = Math.max(0, currentPaid - amountToSubtract);
+
+      const { error: treatmentError } = await supabase
+        .from('treatments')
+        .update({ paid_amount: newPaid })
+        .eq('id', t.id);
+      if (treatmentError) throw treatmentError;
+
+      setNotes(prev => prev.filter(n => n.id !== p.id));
+      setTreatments(prev => prev.map(trt => trt.id === t.id ? { ...trt, paid_amount: newPaid } : trt));
+      toast.success('Taksit silindi.');
+    } catch (err: any) {
+      toast.error('Silinemedi.');
+    } finally {
+      setDeletingInstallmentId(null);
     }
   };
 
@@ -617,7 +645,16 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
                                         <Pencil className="w-3 h-3" />
                                       </button>
                                     </div>
-                                    <span className="font-medium text-emerald-600">+{p.amountStr}</span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-emerald-600">+{p.amountStr}</span>
+                                      <button
+                                        onClick={() => handleDeleteInstallment(p, t)}
+                                        disabled={deletingInstallmentId === p.id}
+                                        className="p-1 text-destructive hover:bg-destructive/10 rounded transition-colors disabled:opacity-50"
+                                      >
+                                        {deletingInstallmentId === p.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                                      </button>
+                                    </div>
                                   </>
                                 )}
                               </div>
