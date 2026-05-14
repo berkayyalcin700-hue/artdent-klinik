@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { FileText, Stethoscope, CreditCard, Mic, Plus, Loader2, X, PlusCircle, Check, Clock, Trash2 } from 'lucide-react';
+import { FileText, Stethoscope, CreditCard, Mic, Plus, Loader2, X, PlusCircle, Check, Clock, Trash2, Pencil } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -21,6 +21,11 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [deletingTreatmentId, setDeletingTreatmentId] = useState<string | null>(null);
+
+  // ── Edit Treatment State ───────────────────────────────────
+  const [editingTreatmentId, setEditingTreatmentId] = useState<string | null>(null);
+  const [editingForm, setEditingForm] = useState<any>({});
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // ── New Treatment Form ─────────────────────────────────────
   const [showTreatmentForm, setShowTreatmentForm] = useState(false);
@@ -133,6 +138,51 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
       toast.error(err.message || 'Tedavi silinemedi.');
     } finally {
       setDeletingTreatmentId(null);
+    }
+  };
+
+  // ── Edit treatment ──────────────────────────────────────────
+  const handleEditClick = (t: any) => {
+    setEditingTreatmentId(t.id);
+    setEditingForm({
+      treatment_name: t.treatment_name || '',
+      tooth_number: t.tooth_number || '',
+      agreed_price: t.agreed_price || '',
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTreatmentId(null);
+    setEditingForm({});
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingForm.treatment_name?.trim()) {
+      toast.error('Tedavi adı zorunludur.');
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const { data, error } = await supabase
+        .from('treatments')
+        .update({
+          treatment_name: editingForm.treatment_name.trim(),
+          tooth_number: editingForm.tooth_number.trim() || null,
+          agreed_price: parseFloat(editingForm.agreed_price) || 0,
+        })
+        .eq('id', editingTreatmentId)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      setTreatments(prev => prev.map(t => t.id === editingTreatmentId ? { ...t, ...data } : t));
+      setEditingTreatmentId(null);
+      toast.success('Tedavi güncellendi.');
+    } catch (err: any) {
+      toast.error(err.message || 'Tedavi güncellenemedi.');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -302,28 +352,74 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
                   <tbody>
                     {treatments.map(t => (
                       <tr key={t.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors group">
-                        <td className="px-6 py-4 font-medium">
-                          {t.treatment_date ? format(new Date(t.treatment_date), 'dd MMM yyyy', { locale: tr }) : '-'}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold">
-                            {t.tooth_number || '-'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">{t.treatment_name}</td>
-                        <td className="px-6 py-4 font-medium text-emerald-600">{formatCurrency(t.agreed_price || 0)}</td>
-                        <td className="px-6 py-4">
-                          <button
-                            onClick={() => handleDeleteTreatment(t.id, t.treatment_name)}
-                            disabled={deletingTreatmentId === t.id}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md text-destructive hover:bg-destructive/10 disabled:opacity-50"
-                            title="Tedaviyi Sil"
-                          >
-                            {deletingTreatmentId === t.id
-                              ? <Loader2 className="w-4 h-4 animate-spin" />
-                              : <Trash2 className="w-4 h-4" />}
-                          </button>
-                        </td>
+                        {editingTreatmentId === t.id ? (
+                          <td colSpan={5} className="px-6 py-4">
+                            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full">
+                              <input 
+                                value={editingForm.treatment_name}
+                                onChange={e => setEditingForm({...editingForm, treatment_name: e.target.value})}
+                                className="flex-1 h-9 rounded-md border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                placeholder="Tedavi Adı"
+                                style={{ color: '#111827', backgroundColor: '#ffffff' }}
+                              />
+                              <input 
+                                value={editingForm.tooth_number}
+                                onChange={e => setEditingForm({...editingForm, tooth_number: e.target.value})}
+                                className="w-24 h-9 rounded-md border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                placeholder="Diş No"
+                                style={{ color: '#111827', backgroundColor: '#ffffff' }}
+                              />
+                              <input 
+                                type="number"
+                                value={editingForm.agreed_price}
+                                onChange={e => setEditingForm({...editingForm, agreed_price: e.target.value})}
+                                className="w-32 h-9 rounded-md border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                placeholder="Tutar (₺)"
+                                style={{ color: '#111827', backgroundColor: '#ffffff' }}
+                              />
+                              <div className="flex gap-2 w-full sm:w-auto justify-end">
+                                <button onClick={handleCancelEdit} className="h-9 px-3 rounded-md text-sm border hover:bg-muted transition-colors">İptal</button>
+                                <button onClick={handleSaveEdit} disabled={savingEdit} className="h-9 px-3 rounded-md text-sm bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center min-w-[72px]">
+                                  {savingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Kaydet'}
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        ) : (
+                          <>
+                            <td className="px-6 py-4 font-medium">
+                              {t.treatment_date ? format(new Date(t.treatment_date), 'dd MMM yyyy', { locale: tr }) : '-'}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold">
+                                {t.tooth_number || '-'}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">{t.treatment_name}</td>
+                            <td className="px-6 py-4 font-medium text-emerald-600">{formatCurrency(t.agreed_price || 0)}</td>
+                            <td className="px-6 py-4">
+                              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
+                                <button
+                                  onClick={() => handleEditClick(t)}
+                                  className="p-1.5 rounded-md text-blue-600 hover:bg-blue-600/10 transition-colors"
+                                  title="Düzenle"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteTreatment(t.id, t.treatment_name)}
+                                  disabled={deletingTreatmentId === t.id}
+                                  className="p-1.5 rounded-md text-destructive hover:bg-destructive/10 disabled:opacity-50 transition-colors"
+                                  title="Tedaviyi Sil"
+                                >
+                                  {deletingTreatmentId === t.id
+                                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                                    : <Trash2 className="w-4 h-4" />}
+                                </button>
+                              </div>
+                            </td>
+                          </>
+                        )}
                       </tr>
                     ))}
                   </tbody>
