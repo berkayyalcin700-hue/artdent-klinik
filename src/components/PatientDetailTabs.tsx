@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { FileText, Stethoscope, CreditCard, Mic, Plus, Loader2, X, PlusCircle, Check, Clock, Trash2, Pencil } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -26,6 +26,11 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
   const [editingTreatmentId, setEditingTreatmentId] = useState<string | null>(null);
   const [editingForm, setEditingForm] = useState<any>({});
   const [savingEdit, setSavingEdit] = useState(false);
+
+  // ── Edit Installment State ─────────────────────────────────
+  const [editingInstallmentId, setEditingInstallmentId] = useState<string | null>(null);
+  const [editingInstallmentDate, setEditingInstallmentDate] = useState<string>('');
+  const [savingInstallmentEdit, setSavingInstallmentEdit] = useState(false);
 
   // ── New Treatment Form ─────────────────────────────────────
   const [showTreatmentForm, setShowTreatmentForm] = useState(false);
@@ -200,6 +205,45 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
       toast.error(err.message || 'Tedavi güncellenemedi.');
     } finally {
       setSavingEdit(false);
+    }
+  };
+
+  // ── Edit Installment ─────────────────────────────────────────
+  const handleEditInstallmentClick = (p: any) => {
+    setEditingInstallmentId(p.id);
+    try {
+      const parsed = parse(p.dateStr, 'dd MMM yyyy', new Date(), { locale: tr });
+      setEditingInstallmentDate(format(parsed, 'yyyy-MM-dd'));
+    } catch {
+      setEditingInstallmentDate('');
+    }
+  };
+
+  const handleSaveInstallmentDate = async (p: any) => {
+    if (!editingInstallmentDate) return;
+    setSavingInstallmentEdit(true);
+    try {
+      const originalNote = notes.find(n => n.id === p.id);
+      if (!originalNote) throw new Error('Not bulunamadı');
+
+      const newDateStr = format(new Date(editingInstallmentDate), 'dd MMM yyyy', { locale: tr });
+      const newText = originalNote.note_text.replace(/\(Ödeme Tarihi: (.*?)\)/, `(Ödeme Tarihi: ${newDateStr})`);
+
+      const { data, error } = await supabase
+        .from('notes')
+        .update({ note_text: newText })
+        .eq('id', p.id)
+        .select()
+        .single();
+      if (error) throw error;
+
+      setNotes(prev => prev.map(n => n.id === p.id ? data : n));
+      setEditingInstallmentId(null);
+      toast.success('Ödeme tarihi güncellendi.');
+    } catch (err: any) {
+      toast.error('Güncellenemedi.');
+    } finally {
+      setSavingInstallmentEdit(false);
     }
   };
 
@@ -545,9 +589,37 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
                           <p className="text-xs font-medium text-muted-foreground mb-2">Taksit Geçmişi</p>
                           <div className="space-y-1.5">
                             {tPayments.map(p => (
-                              <div key={p.id} className="flex justify-between items-center text-xs bg-muted/30 p-2 rounded-md">
-                                <span className="text-muted-foreground">{p.dateStr}</span>
-                                <span className="font-medium text-emerald-600">+{p.amountStr}</span>
+                              <div key={p.id} className="flex justify-between items-center text-xs bg-muted/30 p-2 rounded-md group">
+                                {editingInstallmentId === p.id ? (
+                                  <div className="flex gap-2 w-full justify-between items-center">
+                                    <input 
+                                      type="date"
+                                      value={editingInstallmentDate}
+                                      onChange={e => setEditingInstallmentDate(e.target.value)}
+                                      style={{ color: '#111827', backgroundColor: '#ffffff' }}
+                                      className="h-7 px-2 rounded border focus:outline-none focus:ring-1 focus:ring-primary text-xs w-32"
+                                    />
+                                    <div className="flex gap-1 shrink-0">
+                                      <button onClick={() => setEditingInstallmentId(null)} className="h-7 px-2 rounded border hover:bg-muted text-[10px]">İptal</button>
+                                      <button onClick={() => handleSaveInstallmentDate(p)} disabled={savingInstallmentEdit} className="h-7 px-2 rounded bg-primary text-primary-foreground flex items-center justify-center text-[10px]">
+                                        {savingInstallmentEdit ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Kaydet'}
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-muted-foreground">{p.dateStr}</span>
+                                      <button 
+                                        onClick={() => handleEditInstallmentClick(p)}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-blue-600 hover:bg-blue-600/10 rounded"
+                                      >
+                                        <Pencil className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                    <span className="font-medium text-emerald-600">+{p.amountStr}</span>
+                                  </>
+                                )}
                               </div>
                             ))}
                           </div>
