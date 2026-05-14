@@ -473,7 +473,7 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
                             <td className="px-6 py-4">{t.treatment_name}</td>
                             <td className="px-6 py-4 font-medium text-emerald-600">{formatCurrency(t.agreed_price || 0)}</td>
                             <td className="px-6 py-4">
-                              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
+                              <div className="flex gap-2 transition-opacity justify-end">
                                 <button
                                   onClick={() => handleEditClick(t)}
                                   className="p-1.5 rounded-md text-blue-600 hover:bg-blue-600/10 transition-colors"
@@ -612,7 +612,7 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
                                       <span className="text-muted-foreground">{p.dateStr}</span>
                                       <button 
                                         onClick={() => handleEditInstallmentClick(p)}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-blue-600 hover:bg-blue-600/10 rounded"
+                                        className="p-1 text-blue-600 hover:bg-blue-600/10 rounded transition-colors"
                                       >
                                         <Pencil className="w-3 h-3" />
                                       </button>
