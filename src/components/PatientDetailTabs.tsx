@@ -63,6 +63,7 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
 
   // Payment addition state — keyed by treatment id
   const [paymentInputs, setPaymentInputs] = useState<Record<string, string>>({});
+  const [paymentDates, setPaymentDates] = useState<Record<string, string>>({});
   const [payingId, setPayingId] = useState<string | null>(null);
 
   const totalDebt = treatments.reduce((sum, t) => sum + Number(t.agreed_price || 0), 0);
@@ -75,6 +76,7 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
   // ── Add payment to a treatment ─────────────────────────────
   const handleAddPayment = async (treatment: any) => {
     const extra = parseFloat(paymentInputs[treatment.id] || '0');
+    const pDate = paymentDates[treatment.id] || new Date().toISOString().split('T')[0];
     if (!extra || extra <= 0) {
       toast.error('Geçerli bir tutar girin.');
       return;
@@ -90,10 +92,26 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
         .eq('id', treatment.id);
       if (error) throw error;
 
+      // Add a note about the payment history
+      const { data: noteData, error: noteError } = await supabase
+        .from('notes')
+        .insert({
+          patient_id: patient.id,
+          note_text: `${treatment.treatment_name} işlemi için ${formatCurrency(extra)} ödeme alındı. (Ödeme Tarihi: ${format(new Date(pDate), 'dd MMM yyyy', { locale: tr })})`,
+          note_type: 'text'
+        })
+        .select()
+        .single();
+      
+      if (!noteError && noteData) {
+        setNotes(prev => [noteData, ...prev]);
+      }
+
       setTreatments(prev =>
         prev.map(t => t.id === treatment.id ? { ...t, paid_amount: cappedPaid } : t)
       );
       setPaymentInputs(prev => ({ ...prev, [treatment.id]: '' }));
+      setPaymentDates(prev => ({ ...prev, [treatment.id]: '' }));
       toast.success(`${formatCurrency(extra)} ödeme eklendi.`);
     } catch (err: any) {
       toast.error(err.message || 'Ödeme kaydedilemedi.');
@@ -403,23 +421,34 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
 
                       {/* Add payment input — only if not fully paid */}
                       {!isFullyPaid && (
-                        <div className="flex gap-2 pt-1">
-                          <div className="relative flex-1">
-                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₺</span>
-                            <input
-                              type="number"
-                              min="1"
-                              max={remaining}
-                              placeholder={`Maks. ${formatCurrency(remaining).replace('₺', '').trim()}`}
-                              value={paymentInputs[t.id] || ''}
-                              onChange={e => setPaymentInputs(prev => ({ ...prev, [t.id]: e.target.value }))}
-                              className="w-full h-9 rounded-md border border-input bg-background pl-7 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                            />
+                        <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                          <div className="flex gap-2 flex-1">
+                            <div className="relative flex-1">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₺</span>
+                              <input
+                                type="number"
+                                min="1"
+                                max={remaining}
+                                placeholder={`Maks. ${formatCurrency(remaining).replace('₺', '').trim()}`}
+                                value={paymentInputs[t.id] || ''}
+                                onChange={e => setPaymentInputs(prev => ({ ...prev, [t.id]: e.target.value }))}
+                                className="w-full h-9 rounded-md border border-input bg-background pl-7 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                              />
+                            </div>
+                            <div className="relative w-36 shrink-0">
+                              <input
+                                type="date"
+                                value={paymentDates[t.id] || new Date().toISOString().split('T')[0]}
+                                onChange={e => setPaymentDates(prev => ({ ...prev, [t.id]: e.target.value }))}
+                                style={{ color: '#111827', backgroundColor: '#ffffff' }}
+                                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                              />
+                            </div>
                           </div>
                           <button
                             onClick={() => handleAddPayment(t)}
                             disabled={payingId === t.id || !paymentInputs[t.id]}
-                            className="h-9 px-3 rounded-md text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap"
+                            className="h-9 px-3 rounded-md text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 whitespace-nowrap"
                           >
                             {payingId === t.id ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
