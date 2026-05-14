@@ -71,6 +71,23 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
   const [paymentDates, setPaymentDates] = useState<Record<string, string>>({});
   const [payingId, setPayingId] = useState<string | null>(null);
 
+  // Parses payment history from notes
+  const paymentHistory = notes
+    .map(n => {
+      const match = n.note_text?.match(/^(.*?) işlemi için (.*?) ödeme alındı\. \(Ödeme Tarihi: (.*?)\)$/);
+      if (match) {
+        return {
+          id: n.id,
+          treatmentName: match[1],
+          amountStr: match[2],
+          dateStr: match[3],
+          rawDate: n.created_at
+        };
+      }
+      return null;
+    })
+    .filter(Boolean) as { id: string, treatmentName: string, amountStr: string, dateStr: string, rawDate: string }[];
+
   const totalDebt = treatments.reduce((sum, t) => sum + Number(t.agreed_price || 0), 0);
   const totalPaid = treatments.reduce((sum, t) => sum + Number(t.paid_amount || 0), 0);
   const remainingDebt = totalDebt - totalPaid;
@@ -198,6 +215,20 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
         .update({ paid_amount: newPaid })
         .eq('id', treatment.id);
       if (error) throw error;
+
+      if (!isFullyPaid) {
+        const extra = newPaid - Number(treatment.paid_amount);
+        const { data: noteData } = await supabase
+          .from('notes')
+          .insert({
+            patient_id: patient.id,
+            note_text: `${treatment.treatment_name} işlemi için ${formatCurrency(extra)} ödeme alındı. (Ödeme Tarihi: ${format(new Date(), 'dd MMM yyyy', { locale: tr })})`,
+            note_type: 'text'
+          })
+          .select()
+          .single();
+        if (noteData) setNotes(prev => [noteData, ...prev]);
+      }
 
       setTreatments(prev =>
         prev.map(t => t.id === treatment.id ? { ...t, paid_amount: newPaid } : t)
@@ -458,6 +489,7 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
                   const remaining = agreed - paid;
                   const isFullyPaid = remaining <= 0;
                   const progress = agreed > 0 ? Math.min((paid / agreed) * 100, 100) : 0;
+                  const tPayments = paymentHistory.filter(ph => ph.treatmentName === t.treatment_name);
 
                   return (
                     <div key={t.id} className="rounded-xl border p-4 space-y-3 bg-card">
@@ -485,7 +517,7 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
                           ) : (
                             <Clock className="w-3 h-3" />
                           )}
-                          {isFullyPaid ? 'Ödendi' : `${formatCurrency(remaining)} bekliyor`}
+                          {isFullyPaid ? `Ödendi ${tPayments.length > 0 ? `(${tPayments[0].dateStr})` : ''}` : `${formatCurrency(remaining)} bekliyor`}
                         </button>
                       </div>
 
@@ -506,6 +538,21 @@ export function PatientDetailTabs({ patient, treatments: initialTreatments, note
                           </div>
                         )}
                       </div>
+
+                      {/* Installment History */}
+                      {tPayments.length > 0 && (
+                        <div className="pt-2 border-t mt-2">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Taksit Geçmişi</p>
+                          <div className="space-y-1.5">
+                            {tPayments.map(p => (
+                              <div key={p.id} className="flex justify-between items-center text-xs bg-muted/30 p-2 rounded-md">
+                                <span className="text-muted-foreground">{p.dateStr}</span>
+                                <span className="font-medium text-emerald-600">+{p.amountStr}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Progress bar */}
                       <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
